@@ -14,6 +14,7 @@ while [ "$STEP" -gt 1 ]; do
 	fi
 	tar xfvJ ../steparchive/step${STEP}-packages.tar.xz
 done
+rm -f tar-1.34_0.tar.bz2 # force rebuilding tar every time
 cd ../live-bootstrap
 git clean -fdx
 git restore --staged --worktree :/
