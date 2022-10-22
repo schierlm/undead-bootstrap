@@ -1,0 +1,76 @@
+name: Common bits for running a bootstrap part
+
+on:
+  workflow_call:
+    inputs:
+      step:
+        required: true
+        type: number
+      release_id:
+        required: true
+        type: number
+
+jobs:
+  run_common:
+    name: Common bits for running undead-bootstrap step ${{ inputs.step }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+    - name: Checkout this repository
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: sudo apt-get -y install python3-distutils python3-requests
+
+    - name: Run the bootstrap
+      run: sudo ./run-step.sh ${{ inputs.step }}
+
+    - name: Upload step${{ inputs.step }}-packages.tar.xz artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: step${{ inputs.step }}-packages.tar.xz
+        path: steparchive/step${{ inputs.step }}-packages.tar.xz
+
+    - name: Remove old assets from release to update
+      if: github.ref == format('refs/heads/step{0}', inputs.step) && github.repository == 'schierlm/undead-bootstrap'
+      uses: actions/github-script@v1
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+         var assets = await github.repos.listAssetsForRelease({
+           owner: "schierlm",
+           repo: "undead-bootstrap",
+           release_id: ${{ inputs.release_id }},
+           per_page: 100
+         });
+         for(var asset of assets.data) {
+           await github.repos.deleteReleaseAsset({
+             owner: "schierlm",
+             repo: "undead-bootstrap",
+             asset_id: asset.id
+           });
+         }
+         return true;
+
+    - name: Upload Release Asset step${{ inputs.step }}-packages.tar.xz
+      if: github.ref == format('refs/heads/step{0}', inputs.step) && github.repository == 'schierlm/undead-bootstrap'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: https://uploads.github.com/repos/schierlm/undead-bootstrap/releases/${{ inputs.release_id }}/assets{?name,label}
+        asset_path: steparchive/step${{ inputs.step }}-packages.tar.xz
+        asset_name: step${{ inputs.step }}-packages.tar.xz
+        asset_content_type: application/x-xz
+
+    - name: Upload Release Asset distfiles.tar.xz
+      if: inputs.step == '1' && github.ref == format('refs/heads/step{0}', inputs.step) && github.repository == 'schierlm/undead-bootstrap'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: https://uploads.github.com/repos/schierlm/undead-bootstrap/releases/${{ inputs.release_id }}/assets{?name,label}
+        asset_path: steparchive/distfiles.tar.xz
+        asset_name: distfiles.tar.xz
+        asset_content_type: application/x-xz

@@ -1,0 +1,106 @@
+--- sysa/helpers.sh
++++ sysa/helpers.sh
+@@ -471,7 +471,8 @@ sys_transfer() {
+ 
+     cp -r "${sys_sources}/"* "${dest}/${PREFIX}/src"
+     cp -f "${sys_sources}/init" "${dest}/"
+-    cp -r "${PREFIX}/src/repo" "${dest}/${PREFIX}/src"
++    mv "${PREFIX}/src/repo" "${dest}/${PREFIX}/src"
++    mv "${PREFIX}/src/repo-preseeded" "${dest}/${PREFIX}/src"
+ 
+     shift 2
+     # Copy additional binaries
+--- sysa/run.sh
++++ sysa/run.sh
+@@ -240,9 +240,12 @@
+ 
+ if [ "${CHROOT}" = False ]; then
+     build kexec-tools-2.0.22
++fi
+ 
+     build linux-4.9.10
+ 
++[ "${STEPNUMBER}" = "2" ] && exit
++if [ "${CHROOT}" = False ]; then
+     create_sysb
+     go_sysb
+ fi
+--- sysa/run.kaem
++++ sysa/run.kaem
+@@ -96,4 +96,3 @@
+ kaem --file ${pkg}.kaem
+ cd ..
+ 
+-exec bash run.sh
+--- sysc/run.sh
++++ sysc/run.sh
+@@ -55,4 +55,4 @@
+ 
+ build bash-5.1
+ 
+-exec env -i PATH="${PATH}" PREFIX="${PREFIX}" SOURCES="${SOURCES}" DESTDIR="${DESTDIR}" DISTFILES="${DISTFILES}" SRCDIR="${SRCDIR}" bash run2.sh
++exec env -i STEPNUMBER="${STEPNUMBER}" PATH="${PATH}" PREFIX="${PREFIX}" SOURCES="${SOURCES}" DESTDIR="${DESTDIR}" DISTFILES="${DISTFILES}" SRCDIR="${SRCDIR}" bash run2.sh
+--- sysc/run2.sh
++++ sysc/run2.sh
+@@ -84,6 +84,8 @@ build gcc-4.7.4
+ 
+ build binutils-2.38
+ 
++[ "${STEPNUMBER}" = "3" ] && exit
++
+ build gperf-3.1
+ 
+ build libunistring-0.9.10
+--- /dev/null
++++ sysa/rerun.kaem
+@@ -0,0 +1,50 @@
++#!/bin/sh
++
++# SPDX-FileCopyrightText: 2021 Andrius Štikonas <andrius@stikonas.eu>
++# SPDX-FileCopyrightText: 2021 Paul Dersey <pdersey@gmail.com>
++# SPDX-FileCopyrightText: 2020-2022 fosslinux <fosslinux@aussies.space>
++# SPDX-FileCopyrightText: 2022 Dor Askayo <dor.askayo@gmail.com>
++# SPDX-FileCopyrightText: 2022 Michael Schierl <schierlm@gmx.de>
++#
++# SPDX-License-Identifier: GPL-3.0-or-later
++
++set -ex
++
++export ARCH="x86"
++export ARCH_DIR="x86"
++export sysa=/sysa
++export distfiles=/sysa/distfiles
++export prefix=/usr
++export bindir=${prefix}/bin
++export libdir=${prefix}/lib
++export incdir=${prefix}/include
++export srcdir=${prefix}/src
++export TMPDIR=/tmp # tmpdir is needed for patch to work
++export PATH=${bindir}
++source /stepnumber.sh
++
++# we need to rebuild heirloom lex/yacc every time as the binaries are not distibutable
++export pkg=heirloom-devtools-070527
++cd /sysa/${pkg}
++mkdir build src
++cd build
++lexdir=/lex
++cp ${distfiles}/${pkg}.tar.bz2 ../src/
++bunzip2 -f ../src/${pkg}.tar.bz2
++tar xf ../src/${pkg}.tar ${pkg}/yacc ${pkg}/lex
++rm -r ../src/
++cd ${pkg}
++patch -Np0 -i ../../patches/yacc_remove_wchar.patch
++patch -Np0 -i ../../patches/lex_remove_wchar.patch
++cd yacc
++make -f Makefile.mk CC=tcc AR=tcc\ -ar CFLAGS=-DMAXPATHLEN=100\ -DEILSEQ=84\ -DMB_LEN_MAX=100 LDFLAGS=-lgetopt RANLIB=true
++install -m 644 yaccpar /
++cd ../lex
++make -f Makefile.mk CC=tcc AR=tcc\ -ar CFLAGS=-DEILSEQ=84\ -DMB_LEN_MAX=100 LDFLAGS=-lgetopt RANLIB=true
++mkdir ${lexdir}
++install lex ${bindir}
++install libl.a ${libdir}
++install -m 644 ncform ${lexdir}
++
++cd ${sysa}
++exec bash run.sh

@@ -1,0 +1,37 @@
+name: Build steps that match branch name
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  step1:
+    if: startsWith(github.ref, 'refs/heads/step1')
+    uses: ./.github/workflows/common.yml
+    with:
+      step: 1
+      release_id: 80132772
+  step2:
+    if: startsWith(github.ref, 'refs/heads/step2')
+    uses: ./.github/workflows/common.yml
+    with:
+      step: 2
+      release_id: 80134146
+  step3:
+    if: startsWith(github.ref, 'refs/heads/step3')
+    uses: ./.github/workflows/common.yml
+    with:
+      step: 3
+      release_id: 80262608
+  step4:
+    if: startsWith(github.ref, 'refs/heads/step4')
+    uses: ./.github/workflows/common.yml
+    with:
+      step: 4
+      release_id: 80698124
+  step9:
+    if: startsWith(github.ref, 'refs/heads/main')
+    uses: ./.github/workflows/common.yml
+    with:
+      step: 5
+      release_id: 0

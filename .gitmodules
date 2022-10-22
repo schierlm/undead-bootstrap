@@ -1,0 +1,3 @@
+[submodule "live-bootstrap"]
+	path = live-bootstrap
+	url = https://github.com/fosslinux/live-bootstrap
