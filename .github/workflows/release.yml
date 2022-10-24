@@ -1,0 +1,23 @@
+name: Copy artifacts to new release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Download artifacts
+        run: |
+          for STEP in 1 2 3 4; do
+            wget -nc "https://github.com/schierlm/undead-bootstrap/releases/download/step${STEP}/step${STEP}-packages.tar.xz"
+          done
+          wget -nc "https://github.com/schierlm/undead-bootstrap/releases/download/step1/distfiles.tar.xz"
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "*.tar.xz"
