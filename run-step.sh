@@ -21,6 +21,7 @@ git restore --staged --worktree :/
 patch -p0 -i ../zombify.patch
 STEP=$1
 if [ "${STEP}" -eq 1 ]; then
+	wget -P sysc/distfiles -nc -v https://www.hboehm.info/gc/gc_source/gc-8.0.4.tar.gz
 	./rootfs.py --chroot --preserve --external-sources --repo ../repo
 	tar cfvJ ../steparchive/distfiles.tar.xz sysa/distfiles sysc/tmp/distfiles
 	cd tmp
