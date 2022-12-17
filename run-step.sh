@@ -55,7 +55,7 @@ else
 	env - PATH=/bin $(which chroot) . /usr/bin/bash /sysa/rerun.kaem
 	cd ..
 fi
-[ -d tmp/sysc_image/usr/src/repo ] && mv tmp/sysc_image/usr/src/repo tmp/usr/src
+[ -d tmp/sysc_image/usr/src/repo ] && rm -Rf tmp/usr/src/repo && mv tmp/sysc_image/usr/src/repo tmp/usr/src
 cd tmp/usr/src/repo
 tar cfvJ ../../../../../steparchive/step${STEP}-packages.tar.xz .
 cd ../../../..
